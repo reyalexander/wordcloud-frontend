@@ -2,17 +2,7 @@
   <div class="container">
     <div class="details">
       <h2>{{ question.text_question }}</h2>
-      <div v-if="question.answers && question.answers.length">
-        <h3>Respuestas:</h3>
-        <ul class="answers-list">
-          <li v-for="answer in question.answers" :key="answer.id">
-            {{ answer.text_answer }} (Valor: {{ answer.value }})
-          </li>
-        </ul>
-      </div>
-      <div v-else>
-        <p>No hay respuestas disponibles para esta pregunta.</p>
-      </div>
+      <div id="wordcloud-container" class="wordcloud-wrapper"></div>
     </div>
     <div class="answers">
       <h2>Ingrese su respuesta(s):</h2>
@@ -24,7 +14,18 @@
       </div>
     </div>
   </div>
-  <div id="wordcloud-container" class="wordcloud-wrapper"></div>
+  
+  <div id="popup" class="popup" v-if="dialog">
+    <div class="popup-content">
+      <span class="close" @click="closePopup">&times;</span>
+      <p class="popup-message">¡Gracias por tu respuesta!</p>
+      <div class="popup-buttons">
+        <button class="popup-button" @click="resetForm">Volver a responder</button>
+        <button class="popup-button" @click="goBack">Atrás</button>
+      </div>
+    </div>
+  </div>
+  
   <p class="read-the-docs">Copyright © Camino21, 2024. Terms and Conditions. Notice of Privacy</p>
 </template>
 
@@ -41,8 +42,8 @@ export default {
       first_answer: '',
       second_answer: '',
       third_answer: '',
-      wordcloudData: [],
-      dialog: false
+      dialog: false,
+      chart: null  // Agregado para almacenar la instancia del gráfico
     }
   },
   created() {
@@ -54,6 +55,7 @@ export default {
       try {
         const response = await axios.get(`http://127.0.0.1:8000/api/v1/question/question/${questionId}`)
         this.question = response.data
+        this.renderWordcloud() // Render the wordcloud with the answers of the question
       } catch (error) {
         console.error('Error fetching question details:', error)
       }
@@ -75,29 +77,27 @@ export default {
         await axios.post('http://127.0.0.1:8000/api/v1/answer/answer/', answers)
         this.dialog = true // Muestra el popup de agradecimiento
         await this.fetchQuestionDetails()  // Actualiza las respuestas al enviar
-        await this.fetchWordcloudData()    // Actualiza la nube de palabras
       } catch (error) {
         console.error('Error sending answers:', error)
       }
     },
-    async fetchWordcloudData() {
-      const questionId = this.$route.params.questionId
-      try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/v1/answer/answer/?question_id=${questionId}`)
-        this.wordcloudData = response.data
-        this.renderWordcloud()
-      } catch (error) {
-        console.error('Error fetching wordcloud data:', error)
-      }
-    },
     renderWordcloud() {
       const container = document.getElementById('wordcloud-container')
-      const chart = ECharts.init(container)
 
-      chart.setOption({
+      // Verifica si hay una instancia del gráfico existente y destrúyela
+      if (this.chart) {
+        this.chart.dispose()
+      }
+
+      // Crea una nueva instancia del gráfico
+      this.chart = ECharts.init(container)
+
+      const wordcloudData = this.question.answers.map(answer => ({ name: answer.text_answer, value: answer.value }))
+
+      this.chart.setOption({
         series: [{
           type: 'wordCloud',
-          data: this.wordcloudData.map(answer => ({ name: answer.text_answer, value: answer.value })),
+          data: wordcloudData,
           shape: 'circle',
           textStyle: {
             normal: {
@@ -124,6 +124,9 @@ export default {
     },
     goBack() {
       this.$router.push({ name: 'questions' })
+    },
+    closePopup() {
+      this.dialog = false
     }
   }
 }
@@ -169,15 +172,65 @@ export default {
 
 .wordcloud-wrapper {
   height: 400px;
+  width: 100%;
 }
 
-.answers-list {
-  list-style-type: none;
-  padding-left: 0;
-  margin-top: 10px;
+.popup {
+  display: block; /* Initially hidden */
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0,0,0);
+  background-color: rgba(0,0,0,0.4);
 }
 
-.answers-list li {
-  margin-bottom: 5px;
+.popup-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.popup-message {
+  margin-top: 0;
+}
+
+.popup-buttons {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.popup-button {
+  background-color: #03A49D;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 8px;
 }
 </style>

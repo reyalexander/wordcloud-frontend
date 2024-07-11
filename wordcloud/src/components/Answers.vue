@@ -18,10 +18,10 @@
   <div id="popup" class="popup" v-if="dialog">
     <div class="popup-content">
       <span class="close" @click="closePopup">&times;</span>
+      <p class="popup-message">Si deseas puedes volver a responder, en caso contrario</p>
       <p class="popup-message">¡Gracias por tu respuesta!</p>
       <div class="popup-buttons">
         <button class="popup-button" @click="resetForm">Volver a responder</button>
-        <button class="popup-button" @click="goBack">Atrás</button>
       </div>
     </div>
   </div>
@@ -36,6 +36,12 @@ import 'echarts-wordcloud'
 
 export default {
   name: 'Answers',
+  props: {
+    questionId: {
+      type: String,
+      required: true
+    }
+  },
   data() {
     return {
       question: {},
@@ -51,48 +57,46 @@ export default {
   },
   methods: {
     async fetchQuestionDetails() {
-      const questionId = this.$route.params.questionId
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/v1/question/question/${questionId}`)
-        this.question = response.data
-        this.renderWordcloud() // Render the wordcloud with the answers of the question
+        const response = await axios.get(`http://127.0.0.1:8000/api/v1/question/question/${this.questionId}`);
+        this.question = response.data;
+        this.renderWordcloud(); // Render the wordcloud with the answers of the question
       } catch (error) {
-        console.error('Error fetching question details:', error)
+        console.error('Error fetching question details:', error);
       }
     },
     async send() {
-      const questionId = this.$route.params.questionId
       const answers = [
-        this.first_answer && { text_answer: this.first_answer, question_id: questionId },
-        this.second_answer && { text_answer: this.second_answer, question_id: questionId },
-        this.third_answer && { text_answer: this.third_answer, question_id: questionId }
-      ].filter(Boolean)  // Filtra las respuestas vacías
+        this.first_answer && { text_answer: this.first_answer, question_id: this.questionId },
+        this.second_answer && { text_answer: this.second_answer, question_id: this.questionId },
+        this.third_answer && { text_answer: this.third_answer, question_id: this.questionId }
+      ].filter(Boolean);  // Filtra las respuestas vacías
 
       if (answers.length === 0) {
-        alert('Por favor ingresa al menos una respuesta.')
-        return
+        alert('Por favor ingresa al menos una respuesta.');
+        return;
       }
 
       try {
-        await axios.post('http://127.0.0.1:8000/api/v1/answer/answer/', answers)
-        this.dialog = true // Muestra el popup de agradecimiento
-        await this.fetchQuestionDetails()  // Actualiza las respuestas al enviar
+        await axios.post('http://127.0.0.1:8000/api/v1/answer/answer/', answers);
+        this.dialog = true; // Muestra el popup de agradecimiento
+        await this.fetchQuestionDetails();  // Actualiza las respuestas al enviar
       } catch (error) {
-        console.error('Error sending answers:', error)
+        console.error('Error sending answers:', error);
       }
     },
     renderWordcloud() {
-      const container = document.getElementById('wordcloud-container')
+      const container = document.getElementById('wordcloud-container');
 
       // Verifica si hay una instancia del gráfico existente y destrúyela
       if (this.chart) {
-        this.chart.dispose()
+        this.chart.dispose();
       }
 
       // Crea una nueva instancia del gráfico
-      this.chart = ECharts.init(container)
+      this.chart = ECharts.init(container);
 
-      const wordcloudData = this.question.answers.map(answer => ({ name: answer.text_answer, value: answer.value }))
+      const wordcloudData = this.question.answers.map(answer => ({ name: answer.text_answer, value: answer.value }));
 
       this.chart.setOption({
         series: [{
@@ -114,22 +118,19 @@ export default {
             }
           }
         }]
-      })
+      });
     },
     resetForm() {
-      this.dialog = false
-      this.first_answer = ''
-      this.second_answer = ''
-      this.third_answer = ''
-    },
-    goBack() {
-      this.$router.push({ name: 'questions' })
+      this.dialog = false;
+      this.first_answer = '';
+      this.second_answer = '';
+      this.third_answer = '';
     },
     closePopup() {
-      this.dialog = false
+      this.dialog = false;
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -193,7 +194,7 @@ export default {
   margin: 15% auto;
   padding: 20px;
   border: 1px solid #888;
-  width: 80%;
+  width: 40%;
 }
 
 .close {

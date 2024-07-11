@@ -1,54 +1,54 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from "vue-router";
-import { userServices } from '../services/userServices.js'
-
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { userServices } from '../services/userServices.js';
 
 const router = useRouter();
-const _firstname = ref("")
-const _lastname = ref("")
+const _username = ref('');
+const _password = ref('');
 
-async function login() {
-  
+async function login_user() {
   const credentials = {
-    first_name: _firstname.value,
-    last_name: _lastname.value,
+    username: _username.value,
+    password: _password.value,
   };
+
   try {
-    const response = await userServices.addUser(credentials);
-    console.log(response)
-    router.push({name:"questions"});
+    const response = await userServices.login(credentials);
+    const token = response.data.token;
+    console.log(response);
+
+    // Después de iniciar sesión, obtener los detalles del usuario
+    const userDetails = await userServices.getUserDetails(credentials.username, token);
+    if (userDetails.data.is_admin) {
+      router.push({ name: 'questions' });
+    } else {
+      alert('No tienes permiso para acceder a esta página.');
+    }
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
 }
-
-async function skip() {
-  
-  router.push({name:"questions"});
-}
-
 </script>
 
 <template>
-  <h1>Word Cloud Camino21 Login</h1>
+  <h1>Word Cloud Camino21 Login Admin</h1>
 
   <div class="card">
-    <input type="text" v-model="_firstname" placeholder="Ingresa tus nombres">
-    <input type="text" v-model="_lastname" placeholder="Ingresa tus apellidos">
-    <button v-on:click="login"> Continuar </button>
-    <button v-on:click="skip" style="background-color: blueviolet"> Omitir </button>
+    <input type="text" v-model="_username" placeholder="Ingrese Usuario">
+    <input type="password" v-model="_password" placeholder="Ingresa Contraseña">
+    <button v-on:click="login_user"> Continuar </button>
   </div>
 
   <p class="read-the-docs">Copyright © Camino21, 2024. Terms and Conditions. Notice of Privacy</p>
 </template>
 
 <style scoped>
-
-h1{
+h1 {
   margin-top: 0%;
   margin-bottom: 0%;
 }
+
 .read-the-docs {
   margin-top: 50px;
   color: #888;

@@ -3,6 +3,7 @@ import LoginPanel from "../components/LoginPanel.vue";
 import Questions from "../components/Questions.vue";
 import Answers from "../components/Answers.vue";
 import WordCloud4 from "../components/WordCloud4.vue";
+import QuestionbyCode  from "../components/QuestionsbyCode.vue"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,8 +11,6 @@ const router = createRouter({
     {
       path: "/user",
       name: "user",
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
       component: LoginPanel,
     },
     {
@@ -31,10 +30,17 @@ const router = createRouter({
         component: WordCloud4,
     },
     {
+      path: '/questions-by-code',
+      name: 'QuestionbyCode',
+      component: QuestionbyCode,
+    },
+    {
         path: "/",
         redirect: {name:"user"},
     },
   ],
 });
+
+
 
 export default router;
